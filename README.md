@@ -5,6 +5,9 @@ A MCP (Machine Communication Protocol) server that serves as a gateway for the W
 ## Features
 
 - List all recipients from your Wise account via a simple MCP resource
+- Send money to recipients using the Wise API
+- Create invoice payment requests with line items and payer information
+- Get available balance currencies for invoice creation
 - Automatically handles authentication and profile selection
 - Uses the Wise Sandbox API for development and testing
 
@@ -77,6 +80,36 @@ Sends money to a recipient using the Wise API.
 - `recipient_id`: The ID of the recipient to send money to
 - `payment_reference`: Optional. Reference message for the transfer (defaults to "money")
 - `source_of_funds`: Optional. Source of the funds (e.g., "salary", "savings")
+
+### `create_invoice`
+
+Creates an invoice payment request using the Wise API.
+
+**Parameters**:
+- `profile_type`: The type of profile to use (personal or business)
+- `balance_id`: The ID of the balance to use for the invoice
+- `due_days`: Number of days from today when the invoice is due
+- `line_items`: List of line items, each containing:
+  - `name`: Name/description of the item
+  - `amount`: Unit price amount
+  - `currency`: Currency code (e.g., 'EUR', 'USD')
+  - `quantity`: Quantity of the item
+  - `tax_name`: Optional tax name
+  - `tax_percentage`: Optional tax percentage (0-100)
+  - `tax_behaviour`: Optional tax behaviour ("INCLUDED" or "EXCLUDED")
+- `payer_name`: Optional name of the payer
+- `payer_email`: Optional email of the payer
+- `payer_contact_id`: Optional contact ID of the payer
+- `invoice_number`: Optional invoice number
+- `message`: Optional message to include with the invoice
+- `issue_date`: Optional issue date in YYYY-MM-DD format (defaults to today)
+
+### `get_balance_currencies`
+
+Gets available currencies and balance IDs for creating invoices.
+
+**Parameters**:
+- `profile_type`: The type of profile to use (personal or business)
 
 ## Configuration
 
