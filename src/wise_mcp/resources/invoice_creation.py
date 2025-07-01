@@ -31,24 +31,27 @@ def create_invoice(
 ) -> str:
     """
     Create an invoice payment request using the Wise API.
+    
+    NOTE: Invoices are only available for business profiles. 
+    Personal profiles cannot create invoices.
 
     Args:
-        profile_type: The type of profile to use (personal or business)
+        profile_type: The type of profile to use (must be "business" - personal profiles cannot create invoices)
         balance_id: The ID of the balance to use for the invoice
-        due_days: Number of days from today when the invoice is due
+        due_days: Number of days from today when the invoice is due (use "30" if not specified)
         line_items: List of line items, each containing:
             - name: Name/description of the item
             - amount: Unit price amount
-            - currency: Currency code (e.g., 'EUR', 'USD')
+            - currency: Currency code (e.g., 'EUR', 'USD') — currency must match the balance currency
             - quantity: Quantity of the item
-            - tax_name: Optional tax name
+            - tax_name: Optional tax name (use "Tax" if not specified, most commonly "VAT")
             - tax_percentage: Optional tax percentage (0-100)
-            - tax_behaviour: Optional tax behaviour ("INCLUDED" or "EXCLUDED")
+            - tax_behaviour: Optional tax behaviour ("INCLUDED" or "EXCLUDED", use "EXCLUDED" by default)
         payer_name: Optional name of the payer
         payer_email: Optional email of the payer
         payer_contact_id: Optional contact ID of the payer
-        invoice_number: Optional invoice number
-        message: Optional message to include with the invoice
+        invoice_number: Optional invoice number (will be auto-generated if not provided)
+        message: Optional message to include with the invoice — often used for tax IDs or company numbers.
         issue_date: Optional issue date in YYYY-MM-DD format (defaults to today)
 
     Returns:
@@ -57,6 +60,10 @@ def create_invoice(
     Raises:
         Exception: If any API request fails during the process
     """
+
+    # Check if profile type is business
+    if profile_type.lower() != "business":
+        return "Error: Invoices are only available for business profiles. Personal profiles cannot create invoices."
 
     ctx = init_wise_client(profile_type)
     
@@ -67,59 +74,77 @@ def create_invoice(
     if not issue_date:
         issue_date = datetime.now().strftime("%Y-%m-%d")
     
-    # Build payer information
-    payer = None
-    if payer_name or payer_email or payer_contact_id:
-        payer = PayerV2(
-            contact_id=payer_contact_id,
-            name=payer_name,
-            email=payer_email
-        )
-    
-    # Convert line items
-    converted_line_items = []
-    for item in line_items:
-        # Create the money object for unit price
-        unit_price = Money(
-            amount=float(item["amount"]),
-            currency=item["currency"]
+    try:
+        # Step 1: Create empty invoice to get auto-generated fields
+        empty_invoice = ctx.wise_api_client.create_empty_invoice(
+            profile_id=ctx.profile.profile_id,
+            balance_id=balance_id,
+            due_at=due_date,
+            issue_date=issue_date
         )
         
-        # Create tax object if tax information is provided
-        tax = None
-        if item.get("tax_name") and item.get("tax_percentage") is not None:
-            tax = LineItemTax(
-                name=item["tax_name"],
-                percentage=float(item["tax_percentage"]),
-                behaviour=item.get("tax_behaviour", "INCLUDED")
+        # Use auto-generated invoice number if not provided
+        if not invoice_number and empty_invoice.invoice and empty_invoice.invoice.get("invoiceNumber"):
+            invoice_number = empty_invoice.invoice["invoiceNumber"]
+        
+        # Build payer information
+        payer = None
+        if payer_name or payer_email or payer_contact_id:
+            payer = PayerV2(
+                contact_id=payer_contact_id,
+                name=payer_name,
+                email=payer_email
             )
         
-        converted_line_items.append(LineItem(
-            name=item["name"],
-            unit_price=unit_price,
-            quantity=int(item["quantity"]),
-            tax=tax
-        ))
-    
-    # Create the payment request command
-    payment_request = PaymentRequestInvoiceCommand(
-        balance_id=balance_id,
-        due_at=due_date,
-        invoice_number=invoice_number,
-        payer=payer,
-        line_items=converted_line_items,
-        issue_date=issue_date,
-        message=message
-    )
-    
-    try:
-        # Create the invoice
-        result = ctx.wise_api_client.create_payment_request_v2(
+        # Convert line items
+        converted_line_items = []
+        for item in line_items:
+            # Create the money object for unit price
+            unit_price = Money(
+                amount=float(item["amount"]),
+                currency=item["currency"]
+            )
+            
+            # Create tax object if tax information is provided
+            tax = None
+            if item.get("tax_name") and item.get("tax_percentage") is not None:
+                tax = LineItemTax(
+                    name=item["tax_name"],
+                    percentage=float(item["tax_percentage"]),
+                    behaviour=item.get("tax_behaviour", "EXCLUDED")
+                )
+            
+            converted_line_items.append(LineItem(
+                name=item["name"],
+                unit_price=unit_price,
+                quantity=int(item["quantity"]),
+                tax=tax
+            ))
+        
+        # Step 2: Update the invoice with full data
+        payment_request = PaymentRequestInvoiceCommand(
+            balance_id=balance_id,
+            due_at=due_date,
+            invoice_number=invoice_number,
+            payer=payer,
+            line_items=converted_line_items,
+            issue_date=issue_date,
+            message=message
+        )
+        
+        updated_invoice = ctx.wise_api_client.update_payment_request_v2(
             profile_id=ctx.profile.profile_id,
+            payment_request_id=empty_invoice.id,
             payment_request=payment_request
         )
         
-        return f"Invoice created successfully! ID: {result.id}, Status: {result.status}, Link: {result.link or 'N/A'}"
+        # Step 3: Publish the invoice
+        published_invoice = ctx.wise_api_client.publish_payment_request(
+            profile_id=ctx.profile.profile_id,
+            payment_request_id=updated_invoice.id
+        )
+        
+        return f"Invoice created and published successfully! ID: {published_invoice.id}, Invoice Number: {published_invoice.invoice.get('invoiceNumber') if published_invoice.invoice else 'N/A'}, Status: {published_invoice.status}, Link: {published_invoice.link or 'N/A'}"
         
     except Exception as error:
         return f"Failed to create invoice: {str(error)}"
@@ -129,9 +154,12 @@ def create_invoice(
 def get_balance_currencies(profile_type: str) -> str:
     """
     Get available currencies and balance IDs for creating invoices.
+    
+    NOTE: Invoices are only available for business profiles.
+    Personal profiles cannot create invoices.
 
     Args:
-        profile_type: The type of profile to use (personal or business)
+        profile_type: The type of profile to use (should be "business" for invoice creation)
 
     Returns:
         String with formatted list of available balances and their IDs
@@ -139,6 +167,10 @@ def get_balance_currencies(profile_type: str) -> str:
     Raises:
         Exception: If the API request fails
     """
+    
+    # Warn if using personal profile
+    if profile_type.lower() == "personal":
+        return "Warning: Invoices are only available for business profiles. Personal profiles cannot create invoices. Please use profile_type='business' instead."
     
     ctx = init_wise_client(profile_type)
     
@@ -149,7 +181,7 @@ def get_balance_currencies(profile_type: str) -> str:
         if not currencies.get("balances"):
             return "No balances found for this profile."
         
-        result = "Available balances for invoice creation:\n\n"
+        result = "Available balances for invoice creation (business profiles only):\n\n"
         for balance in currencies["balances"]:
             result += f"• Currency: {balance['currency']}, Balance ID: {balance['id']}\n"
         

@@ -83,10 +83,10 @@ Sends money to a recipient using the Wise API.
 
 ### `create_invoice`
 
-Creates an invoice payment request using the Wise API.
+Creates an invoice payment request using the Wise API. **Note: Invoices are only available for business profiles.**
 
 **Parameters**:
-- `profile_type`: The type of profile to use (personal or business)
+- `profile_type`: The type of profile to use (must be "business" - personal profiles cannot create invoices)
 - `balance_id`: The ID of the balance to use for the invoice
 - `due_days`: Number of days from today when the invoice is due
 - `line_items`: List of line items, each containing:
@@ -100,16 +100,21 @@ Creates an invoice payment request using the Wise API.
 - `payer_name`: Optional name of the payer
 - `payer_email`: Optional email of the payer
 - `payer_contact_id`: Optional contact ID of the payer
-- `invoice_number`: Optional invoice number
+- `invoice_number`: Optional invoice number (auto-generated if not provided)
 - `message`: Optional message to include with the invoice
 - `issue_date`: Optional issue date in YYYY-MM-DD format (defaults to today)
 
+The invoice creation process follows these steps:
+1. Creates an empty invoice to get auto-generated fields (like invoice number)
+2. Updates the invoice with full data (line items, payer info, etc.)
+3. Publishes the invoice to make it active and available for payment
+
 ### `get_balance_currencies`
 
-Gets available currencies and balance IDs for creating invoices.
+Gets available currencies and balance IDs for creating invoices. **Note: Invoices are only available for business profiles.**
 
 **Parameters**:
-- `profile_type`: The type of profile to use (personal or business)
+- `profile_type`: The type of profile to use (should be "business" for invoice creation)
 
 ## Configuration
 
