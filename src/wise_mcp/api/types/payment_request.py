@@ -54,7 +54,7 @@ class PaymentRequestInvoiceCommand:
 
     def __post_init__(self):
         if self.selected_payment_methods is None:
-            self.selected_payment_methods = ["ACCOUNT_DETAILS", "CARD"]
+            self.selected_payment_methods = ["ACCOUNT_DETAILS"]
         if self.line_items is None:
             self.line_items = []
 

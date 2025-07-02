@@ -453,13 +453,16 @@ class WiseApiClient:
         
         payload = {
             "requestType": "INVOICE",
-            "selectedPaymentMethods": ["ACCOUNT_DETAILS", "CARD"],
+            "selectedPaymentMethods": [],
             "balanceId": balance_id,
             "dueAt": due_at,
             "issueDate": issue_date,
             "lineItems": []
         }
-        
+
+        # log the payload for debugging
+        print(f"Creating empty invoice with payload: {payload}")
+
         response = requests.post(url, headers=self.headers, json=payload)
         
         if response.status_code >= 400:
@@ -558,6 +561,9 @@ class WiseApiClient:
             
             payload["lineItems"].append(line_item)
         
+                # log the payload for debugging
+        print(f"Creating payment request with payload: {payload}")
+
         response = requests.put(url, headers=self.headers, json=payload)
         
         if response.status_code >= 400:

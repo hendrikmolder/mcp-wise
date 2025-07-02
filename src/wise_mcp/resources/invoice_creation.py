@@ -82,6 +82,9 @@ def create_invoice(
             due_at=due_date,
             issue_date=issue_date
         )
+
+        # log empty invoice details for debugging
+        print(f"Empty invoice created: {empty_invoice}")
         
         # Use auto-generated invoice number if not provided
         if not invoice_number and empty_invoice.invoice and empty_invoice.invoice.get("invoiceNumber"):
