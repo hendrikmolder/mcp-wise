@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from wise_mcp.app import mcp
 from wise_mcp.api.wise_client_helper import init_wise_client
+import traceback
 from wise_mcp.api.types import (
     PaymentRequestInvoiceCommand,
     PayerV2,
@@ -36,7 +37,7 @@ def create_invoice(
     Personal profiles cannot create invoices.
 
     Args:
-        profile_type: The type of profile to use (must be "business" - personal profiles cannot create invoices)
+        profile_type: The type of profile to use (must be "business" or "BUSINESS" - personal profiles cannot create invoices)
         balance_id: The ID of the balance to use for the invoice
         due_days: Number of days from today when the invoice is due (use "30" if not specified)
         line_items: List of line items, each containing:
@@ -47,12 +48,12 @@ def create_invoice(
             - tax_name: Optional tax name (use "Tax" if not specified, most commonly "VAT")
             - tax_percentage: Optional tax percentage (0-100)
             - tax_behaviour: Optional tax behaviour ("INCLUDED" or "EXCLUDED", use "EXCLUDED" by default)
-        payer_name: Optional name of the payer
+        payer_name: Required name of the payer — ask user input if not provided
         payer_email: Optional email of the payer
-        payer_contact_id: Optional contact ID of the payer
+        payer_contact_id: is NOT used — use name or name + email
         invoice_number: Optional invoice number (will be auto-generated if not provided)
         message: Optional message to include with the invoice — often used for tax IDs or company numbers.
-        issue_date: Optional issue date in YYYY-MM-DD format (defaults to today)
+        issue_date: Optional issue date in YYYY-MM-DDTHH:MM:SS.SSSZ format (defaults to today)
 
     Returns:
         String message with invoice creation status and link
@@ -68,14 +69,15 @@ def create_invoice(
     ctx = init_wise_client(profile_type)
     
     # Calculate due date
-    due_date = (datetime.now() + timedelta(days=due_days)).strftime("%Y-%m-%d")
-    
+    due_date = (datetime.now() + timedelta(days=due_days)).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
     # Use today as issue date if not provided
     if not issue_date:
-        issue_date = datetime.now().strftime("%Y-%m-%d")
-    
+        issue_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
     try:
         # Step 1: Create empty invoice to get auto-generated fields
+        print(f"Creating empty invoice for profile {ctx.profile.profile_id} with balance ID {balance_id} due on {due_date} and issue date {issue_date}")
         empty_invoice = ctx.wise_api_client.create_empty_invoice(
             profile_id=ctx.profile.profile_id,
             balance_id=balance_id,
@@ -104,7 +106,7 @@ def create_invoice(
         for item in line_items:
             # Create the money object for unit price
             unit_price = Money(
-                amount=float(item["amount"]),
+                value=float(item["amount"]),
                 currency=item["currency"]
             )
             
@@ -150,6 +152,9 @@ def create_invoice(
         return f"Invoice created and published successfully! ID: {published_invoice.id}, Invoice Number: {published_invoice.invoice.get('invoiceNumber') if published_invoice.invoice else 'N/A'}, Status: {published_invoice.status}, Link: {published_invoice.link or 'N/A'}"
         
     except Exception as error:
+        error_details = traceback.format_exc()
+        print(f"Error occurred during invoice creation: {str(error)}")
+        print(f"Traceback details: {error_details}")
         return f"Failed to create invoice: {str(error)}"
 
 

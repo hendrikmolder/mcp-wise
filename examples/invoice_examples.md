@@ -68,7 +68,7 @@ create_invoice(
     payer_name="Acme Corporation",
     payer_email="accounting@acme.com",
     message="Payment terms: Net 15 days",
-    issue_date="2025-07-01"
+    issue_date="2025-07-01T00:00:00.000Z"
 )
 ```
 

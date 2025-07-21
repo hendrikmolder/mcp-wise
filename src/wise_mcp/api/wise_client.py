@@ -50,7 +50,7 @@ class WiseApiClient:
         Raises:
             Exception: If the API request fails.
         """
-        url = f"{self.base_url}/v1/profiles"
+        url = f"{self.base_url}/v2/profiles"
         response = requests.get(url, headers=self.headers)
         
         if response.status_code >= 400:
@@ -71,7 +71,7 @@ class WiseApiClient:
         Raises:
             Exception: If the API request fails.
         """
-        url = f"{self.base_url}/v1/profiles/{profile_id}"
+        url = f"{self.base_url}/v2/profiles/{profile_id}"
         response = requests.get(url, headers=self.headers)
         
         if response.status_code >= 400:
@@ -409,7 +409,7 @@ class WiseApiClient:
         return PaymentRequestV2(
             id=response_data["id"],
             amount=Money(
-                amount=response_data["amount"]["amount"],
+                value=response_data["amount"]["value"],
                 currency=response_data["amount"]["currency"]
             ),
             profile_id=response_data["profileId"],
@@ -440,9 +440,9 @@ class WiseApiClient:
         Args:
             profile_id: The ID of the profile to create the invoice for
             balance_id: The ID of the balance to use for the invoice
-            due_at: Due date in YYYY-MM-DD format
-            issue_date: Issue date in YYYY-MM-DD format
-            
+            due_at: Due date in YYYY-MM-DDTHH:MM:SS.SSSZ format
+            issue_date: Issue date in YYYY-MM-DDTHH:MM:SS.SSSZ format
+
         Returns:
             PaymentRequestV2 object containing the created empty invoice
             
@@ -453,7 +453,7 @@ class WiseApiClient:
         
         payload = {
             "requestType": "INVOICE",
-            "selectedPaymentMethods": [],
+            "selectedPaymentMethods": [],  
             "balanceId": balance_id,
             "dueAt": due_at,
             "issueDate": issue_date,
@@ -473,7 +473,7 @@ class WiseApiClient:
         return PaymentRequestV2(
             id=response_data["id"],
             amount=Money(
-                amount=response_data["amount"]["amount"],
+                value=response_data["amount"]["value"],
                 currency=response_data["amount"]["currency"]
             ),
             profile_id=response_data["profileId"],
@@ -546,7 +546,7 @@ class WiseApiClient:
             line_item = {
                 "name": item.name,
                 "unitPrice": {
-                    "amount": item.unit_price.amount,
+                    "value": item.unit_price.value,
                     "currency": item.unit_price.currency
                 },
                 "quantity": item.quantity
@@ -574,7 +574,7 @@ class WiseApiClient:
         return PaymentRequestV2(
             id=response_data["id"],
             amount=Money(
-                amount=response_data["amount"]["amount"],
+                value=response_data["amount"]["value"],
                 currency=response_data["amount"]["currency"]
             ),
             profile_id=response_data["profileId"],
@@ -624,7 +624,7 @@ class WiseApiClient:
         return PaymentRequestV2(
             id=response_data["id"],
             amount=Money(
-                amount=response_data["amount"]["amount"],
+                value=response_data["amount"]["value"],
                 currency=response_data["amount"]["currency"]
             ),
             profile_id=response_data["profileId"],

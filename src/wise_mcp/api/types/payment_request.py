@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any, Literal
 @dataclass
 class Money:
     """Represents a monetary amount."""
-    amount: float
+    value: float
     currency: str
 
 
