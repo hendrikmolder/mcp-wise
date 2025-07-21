@@ -144,10 +144,6 @@ wise-mcp/
         └── app.py      # MCP application setup
 ```
 
-### Running locally
-
-`uv run fastmcp run ./src/wise_mcp/main.py -t http`
-
 ### Adding New Features
 
 To add new features:
