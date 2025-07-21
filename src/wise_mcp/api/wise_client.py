@@ -460,9 +460,6 @@ class WiseApiClient:
             "lineItems": []
         }
 
-        # log the payload for debugging
-        print(f"Creating empty invoice with payload: {payload}")
-
         response = requests.post(url, headers=self.headers, json=payload)
         
         if response.status_code >= 400:

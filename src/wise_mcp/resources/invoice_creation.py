@@ -77,7 +77,6 @@ def create_invoice(
 
     try:
         # Step 1: Create empty invoice to get auto-generated fields
-        print(f"Creating empty invoice for profile {ctx.profile.profile_id} with balance ID {balance_id} due on {due_date} and issue date {issue_date}")
         empty_invoice = ctx.wise_api_client.create_empty_invoice(
             profile_id=ctx.profile.profile_id,
             balance_id=balance_id,
