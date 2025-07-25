@@ -368,14 +368,17 @@ class WiseApiClient:
             
         if payment_request.payer:
             payer_data = {}
-            if payment_request.payer.contact_id:
-                payer_data["contactId"] = payment_request.payer.contact_id
             if payment_request.payer.name:
                 payer_data["name"] = payment_request.payer.name
             if payment_request.payer.email:
                 payer_data["email"] = payment_request.payer.email
-            if payment_request.payer.address:
-                payer_data["address"] = payment_request.payer.address
+            if payment_request.payer.address and payment_request.payer.address.countryIso3Code:
+                payer_data["address"] = {
+                    "firstLine": payment_request.payer.address.firstLine,
+                    "countryIso3Code": payment_request.payer.address.countryIso3Code
+                }
+            if payment_request.payer.locale:
+                payer_data["locale"] = payment_request.payer.locale
             payload["payer"] = payer_data
         
         # Convert line items

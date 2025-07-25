@@ -12,14 +12,20 @@ class Money:
     value: float
     currency: str
 
+@dataclass
+class PayerAddress:
+    """Represents an address for a payer."""
+    countryIso3Code: str
+    firstLine: Optional[str] = None
+
 
 @dataclass
 class PayerV2:
     """Represents a payer in a payment request."""
-    contact_id: Optional[str] = None
-    name: str = None
+    name: str
     email: Optional[str] = None
-    address: Optional[Dict[str, str]] = None
+    address: Optional[PayerAddress] = None
+    locale: Optional[str] = 'en'
 
 
 @dataclass

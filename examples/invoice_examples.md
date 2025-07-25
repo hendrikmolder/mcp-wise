@@ -33,6 +33,10 @@ create_invoice(
         }
     ],
     payer_name="John Doe",
+    payer_address={
+        "firstLine": "56 Shoreditch High Street, London E1 6JJ",
+        "countryIso3Code": "gbr"
+    },
     payer_email="john@example.com",
     message="Thank you for your business!"
 )
@@ -66,29 +70,14 @@ create_invoice(
         }
     ],
     payer_name="Acme Corporation",
+        payer_address={
+        "firstLine": "56 Shoreditch High Street, London E1 6JJ",
+        "countryIso3Code": "gbr"
+    },
+    payer_locale="es",
     payer_email="accounting@acme.com",
     message="Payment terms: Net 15 days",
     issue_date="2025-07-01T00:00:00.000Z"
-)
-```
-
-## Example 3: Invoice with Contact ID
-
-```python
-# If you have a contact ID from your Wise account
-create_invoice(
-    profile_type="business",  # Only business profiles supported
-    balance_id=12345,
-    due_days=7,
-    line_items=[
-        {
-            "name": "Freelance Writing",
-            "amount": 500.00,
-            "currency": "GBP",
-            "quantity": 5  # 5 articles
-        }
-    ],
-    payer_contact_id="contact_123456",  # Existing contact in Wise
 )
 ```
 
@@ -105,6 +94,13 @@ Before creating an invoice, you need to know which balance to use. Use the `get_
 
 get_balance_currencies(profile_type="business")  # Must use business profile
 ```
+
+## Formatting payer address
+
+We want to follow the common address formatting practices for a given region/country.
+The payer address also goes onto an invoice PDF and we usually want it go onto multiple lines there – to achieve this, you may place new line characters into the address ("\n").
+
+For example, a given address "56 Shoreditch High Street, London, E1 6JJ" can be split onto multiple lines as "56 Shoreditch High Street\nLondon\nE1 6JJ".
 
 ## Important Notes
 

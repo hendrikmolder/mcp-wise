@@ -5,6 +5,7 @@ Wise API invoice creation resource for the FastMCP server.
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
+from wise_mcp.api.types.payment_request import PayerAddress
 from wise_mcp.app import mcp
 from wise_mcp.api.wise_client_helper import init_wise_client
 import traceback
@@ -23,9 +24,10 @@ def create_invoice(
     balance_id: int,
     due_days: int,
     line_items: List[Dict[str, Any]],
-    payer_name: Optional[str] = None,
+    payer_name: str,
     payer_email: Optional[str] = None,
-    payer_contact_id: Optional[str] = None,
+    payer_address: Optional[Dict[str, str]] = None,
+    payer_locale: Optional[str] = 'en',
     invoice_number: Optional[str] = None,
     message: Optional[str] = None,
     issue_date: Optional[str] = None
@@ -50,7 +52,10 @@ def create_invoice(
             - tax_behaviour: Optional tax behaviour ("INCLUDED" or "EXCLUDED", use "EXCLUDED" by default)
         payer_name: Required name of the payer — ask user input if not provided
         payer_email: Optional email of the payer
-        payer_contact_id: is NOT used — use name or name + email
+        payer_address: Optional address of the payer, should be a dictionary with:
+            - firstLine: First line of the address (optional)
+            - countryIso3Code: ISO 3166-1 alpha-3 country code (required)
+        payer_locale: Optional 2-letter locale for the payer — this determines the language of the invoice PDF document (defaults to 'en')
         invoice_number: Optional invoice number (will be auto-generated if not provided)
         message: Optional message to include with the invoice — often used for tax IDs or company numbers.
         issue_date: Optional issue date in YYYY-MM-DDTHH:MM:SS.SSSZ format (defaults to today)
@@ -83,21 +88,27 @@ def create_invoice(
             due_at=due_date,
             issue_date=issue_date
         )
-
-        # log empty invoice details for debugging
-        print(f"Empty invoice created: {empty_invoice}")
         
         # Use auto-generated invoice number if not provided
         if not invoice_number and empty_invoice.invoice and empty_invoice.invoice.get("invoiceNumber"):
             invoice_number = empty_invoice.invoice["invoiceNumber"]
         
+        # Build payer address if provided
+        payer_address_object = None
+        if payer_address:
+            payer_address_object = PayerAddress(
+                firstLine=payer_address["firstLine"],
+                countryIso3Code=payer_address["countryIso3Code"]
+            )
+
         # Build payer information
         payer = None
-        if payer_name or payer_email or payer_contact_id:
+        if payer_name or payer_email or payer_address or payer_locale:
             payer = PayerV2(
-                contact_id=payer_contact_id,
                 name=payer_name,
-                email=payer_email
+                email=payer_email,
+                address=payer_address_object,
+                locale=payer_locale
             )
         
         # Convert line items

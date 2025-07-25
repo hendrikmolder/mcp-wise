@@ -132,9 +132,12 @@ Creates an invoice payment request using the Wise API. **Note: Invoices are only
   - `tax_name`: Optional tax name
   - `tax_percentage`: Optional tax percentage (0-100)
   - `tax_behaviour`: Optional tax behaviour ("INCLUDED" or "EXCLUDED")
-- `payer_name`: Optional name of the payer
+- `payer_name`: Name of the payer
+- `payer_address`: Address of the payer (optional)
+   - `firstLine`: Street address (e.g. 56 Shoreditch High Street, London E1 6JJ)
+   - `countryIso3Code`: ISO-3 country code, (e.g. "gbr")
+- `payer_locale`: Payer's locale/language preference (e.g., "en", "fr", "de")
 - `payer_email`: Optional email of the payer
-- `payer_contact_id`: Optional contact ID of the payer
 - `invoice_number`: Optional invoice number (auto-generated if not provided)
 - `message`: Optional message to include with the invoice
 - `issue_date`: Optional issue date in YYYY-MM-DD format (defaults to today)
